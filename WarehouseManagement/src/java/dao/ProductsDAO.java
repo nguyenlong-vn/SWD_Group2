@@ -8,6 +8,6 @@ package dao;
  *
  * @author nglon
  */
-public class InventoryBatches {
+public class ProductsDAO {
     
 }

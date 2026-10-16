@@ -8,6 +8,6 @@ package dao;
  *
  * @author nglon
  */
-public class Users {
+public class SupplierReturnsDAO {
     
 }
