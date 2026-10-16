@@ -6,8 +6,8 @@ package model;
 
 /**
  *
- * @author nglon
+ * @author vuaga
  */
-public class RolesDAO {
+public class Roles {
     
 }
