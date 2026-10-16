@@ -8,6 +8,6 @@ package model;
  *
  * @author nglon
  */
-public class d {
+public class StorageLocations {
     
 }
