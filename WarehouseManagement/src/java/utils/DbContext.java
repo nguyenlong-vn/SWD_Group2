@@ -9,8 +9,8 @@ public class DbContext {
         try {
             Class.forName("com.microsoft.sqlserver.jdbc.SQLServerDriver");
             
-            String user = "admin";
-            String pass = "123456";
+            String user = "sa12";
+            String pass = "123";
             String url = "jdbc:sqlserver://localhost:1433;"
            + "databaseName=WarehouseManagement;"
            + "encrypt=true;"
