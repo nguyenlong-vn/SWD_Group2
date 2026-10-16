@@ -8,6 +8,6 @@ package model;
  *
  * @author nglon
  */
-public class RolesDAO {
+public class Roles {
     
 }
