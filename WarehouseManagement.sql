@@ -105,6 +105,7 @@ CREATE TABLE ProvisionalReceipts (
     ReceivedDate DATETIME NOT NULL,
     ReceivedBy INT NOT NULL,
     Status VARCHAR(20) NOT NULL DEFAULT 'Pending',
+    QCStatus VARCHAR(20) NOT NULL DEFAULT 'Pending',
     Notes NVARCHAR(500),
     FOREIGN KEY (ImportOrderId) REFERENCES ImportOrders(ImportOrderId),
     FOREIGN KEY (ReceivedBy) REFERENCES Users(UserId)
@@ -180,11 +181,11 @@ CREATE TABLE SupplierReturns (
 CREATE TABLE SupplierReturnDetails (
     ReturnDetailId INT IDENTITY(1,1) PRIMARY KEY,
     ReturnId INT NOT NULL,
-    BatchId INT NOT NULL,
+    ProvisionalDetailId INT NOT NULL,
     Quantity DECIMAL(18,3) NOT NULL,
     Reason NVARCHAR(255) NOT NULL,
     FOREIGN KEY (ReturnId) REFERENCES SupplierReturns(ReturnId),
-    FOREIGN KEY (BatchId) REFERENCES InventoryBatches(BatchId)
+    FOREIGN KEY (ProvisionalDetailId) REFERENCES ProvisionalReceiptDetails(ProvisionalDetailId)
 );
 
 CREATE TABLE ExportOrders (
@@ -237,13 +238,13 @@ CREATE TABLE StockMovements (
 
 CREATE TABLE QualityInspections (
     InspectionId INT IDENTITY(1,1) PRIMARY KEY,
-    BatchId INT NOT NULL,
+    ProvisionalReceiptId INT NOT NULL,
     InspectedBy INT NOT NULL,
     InspectionDate DATETIME NOT NULL,
     Grade VARCHAR(20) NOT NULL,
     Result VARCHAR(20) NOT NULL,
     Notes NVARCHAR(500),
-    FOREIGN KEY (BatchId) REFERENCES InventoryBatches(BatchId),
+    FOREIGN KEY (ProvisionalReceiptId) REFERENCES ProvisionalReceipts(ProvisionalReceiptId),
     FOREIGN KEY (InspectedBy) REFERENCES Users(UserId)
 );
 
@@ -515,28 +516,29 @@ VALUES
 (19, 4, 275, N'kg', 23700),
 (20, 5, 280, N'kg', 24000);
 
-INSERT INTO ProvisionalReceipts (ImportOrderId, ReceiptNumber, ReceivedDate, ReceivedBy, Status, Notes)
+INSERT INTO ProvisionalReceipts
+    (ImportOrderId, ReceiptNumber, ReceivedDate, ReceivedBy, Status, QCStatus, Notes)
 VALUES
-(1, 'PR001', '2026-01-04 08:00:00', 2, 'Completed', N'Hàng được tiếp nhận và kiểm tra'),
-(2, 'PR002', '2026-01-05 08:00:00', 3, 'Completed', N'Hàng được tiếp nhận và kiểm tra'),
-(3, 'PR003', '2026-01-06 08:00:00', 4, 'Completed', N'Hàng được tiếp nhận và kiểm tra'),
-(4, 'PR004', '2026-01-07 08:00:00', 1, 'Completed', N'Hàng được tiếp nhận và kiểm tra'),
-(5, 'PR005', '2026-01-08 08:00:00', 2, 'Completed', N'Hàng được tiếp nhận và kiểm tra'),
-(6, 'PR006', '2026-01-09 08:00:00', 3, 'Completed', N'Hàng được tiếp nhận và kiểm tra'),
-(7, 'PR007', '2026-01-10 08:00:00', 4, 'Completed', N'Hàng được tiếp nhận và kiểm tra'),
-(8, 'PR008', '2026-01-11 08:00:00', 1, 'Completed', N'Hàng được tiếp nhận và kiểm tra'),
-(9, 'PR009', '2026-01-12 08:00:00', 2, 'Completed', N'Hàng được tiếp nhận và kiểm tra'),
-(10, 'PR010', '2026-01-13 08:00:00', 3, 'Completed', N'Hàng được tiếp nhận và kiểm tra'),
-(11, 'PR011', '2026-01-14 08:00:00', 4, 'Completed', N'Hàng được tiếp nhận và kiểm tra'),
-(12, 'PR012', '2026-01-15 08:00:00', 1, 'Completed', N'Hàng được tiếp nhận và kiểm tra'),
-(13, 'PR013', '2026-01-16 08:00:00', 2, 'Completed', N'Hàng được tiếp nhận và kiểm tra'),
-(14, 'PR014', '2026-01-17 08:00:00', 3, 'Completed', N'Hàng được tiếp nhận và kiểm tra'),
-(15, 'PR015', '2026-01-18 08:00:00', 4, 'Completed', N'Hàng được tiếp nhận và kiểm tra'),
-(16, 'PR016', '2026-01-19 08:00:00', 1, 'Pending', N'Hàng được tiếp nhận và kiểm tra'),
-(17, 'PR017', '2026-01-20 08:00:00', 2, 'Pending', N'Hàng được tiếp nhận và kiểm tra'),
-(18, 'PR018', '2026-01-21 08:00:00', 3, 'Pending', N'Hàng được tiếp nhận và kiểm tra'),
-(19, 'PR019', '2026-01-22 08:00:00', 4, 'Pending', N'Hàng được tiếp nhận và kiểm tra'),
-(20, 'PR020', '2026-01-23 08:00:00', 1, 'Pending', N'Hàng được tiếp nhận và kiểm tra');
+(1, 'PR001', '2026-01-04 08:00:00', 2, 'Completed', 'Passed', N'Hàng được tiếp nhận và kiểm tra'),
+(2, 'PR002', '2026-01-05 08:00:00', 3, 'Completed', 'Passed', N'Hàng được tiếp nhận và kiểm tra'),
+(3, 'PR003', '2026-01-06 08:00:00', 4, 'Completed', 'Failed', N'Hàng không đạt yêu cầu chất lượng'),
+(4, 'PR004', '2026-01-07 08:00:00', 1, 'Completed', 'Passed', N'Hàng được tiếp nhận và kiểm tra'),
+(5, 'PR005', '2026-01-08 08:00:00', 2, 'Completed', 'Passed', N'Hàng được tiếp nhận và kiểm tra'),
+(6, 'PR006', '2026-01-09 08:00:00', 3, 'Completed', 'Passed', N'Hàng được tiếp nhận và kiểm tra'),
+(7, 'PR007', '2026-01-10 08:00:00', 4, 'Completed', 'Failed', N'Hàng không đạt yêu cầu chất lượng'),
+(8, 'PR008', '2026-01-11 08:00:00', 1, 'Completed', 'Passed', N'Hàng được tiếp nhận và kiểm tra'),
+(9, 'PR009', '2026-01-12 08:00:00', 2, 'Completed', 'Passed', N'Hàng được tiếp nhận và kiểm tra'),
+(10, 'PR010', '2026-01-13 08:00:00', 3, 'Completed', 'Passed', N'Hàng được tiếp nhận và kiểm tra'),
+(11, 'PR011', '2026-01-14 08:00:00', 4, 'Completed', 'Failed', N'Hàng không đạt yêu cầu chất lượng'),
+(12, 'PR012', '2026-01-15 08:00:00', 1, 'Completed', 'Passed', N'Hàng được tiếp nhận và kiểm tra'),
+(13, 'PR013', '2026-01-16 08:00:00', 2, 'Completed', 'Passed', N'Hàng được tiếp nhận và kiểm tra'),
+(14, 'PR014', '2026-01-17 08:00:00', 3, 'Completed', 'Passed', N'Hàng được tiếp nhận và kiểm tra'),
+(15, 'PR015', '2026-01-18 08:00:00', 4, 'Completed', 'Failed', N'Hàng không đạt yêu cầu chất lượng'),
+(16, 'PR016', '2026-01-19 08:00:00', 1, 'Completed', 'Passed', N'Hàng được tiếp nhận và kiểm tra'),
+(17, 'PR017', '2026-01-20 08:00:00', 2, 'Completed', 'Pending', N'Hàng đang chờ kiểm tra chất lượng'),
+(18, 'PR018', '2026-01-21 08:00:00', 3, 'Completed', 'Pending', N'Hàng đang chờ kiểm tra chất lượng'),
+(19, 'PR019', '2026-01-22 08:00:00', 4, 'Completed', 'Pending', N'Hàng đang chờ kiểm tra chất lượng'),
+(20, 'PR020', '2026-01-23 08:00:00', 1, 'Completed', 'Pending', N'Hàng đang chờ kiểm tra chất lượng');
 
 INSERT INTO ProvisionalReceiptDetails (ProvisionalReceiptId, ProductId, Quantity, Unit)
 VALUES
@@ -672,29 +674,18 @@ VALUES
 
 INSERT INTO SupplierReturns (SupplierId, ImportOrderId, ReturnNumber, ReturnDate, Reason, Status, CreatedBy)
 VALUES
-(1, 1, 'RET001', '2026-01-07 08:00:00', N'Hàng không đạt yêu cầu chất lượng', 'Completed', 1),
-(2, 2, 'RET002', '2026-01-08 08:00:00', N'Hàng không đạt yêu cầu chất lượng', 'Completed', 2),
-(3, 3, 'RET003', '2026-01-09 08:00:00', N'Hàng không đạt yêu cầu chất lượng', 'Completed', 3),
-(4, 4, 'RET004', '2026-01-10 08:00:00', N'Hàng không đạt yêu cầu chất lượng', 'Completed', 4),
-(5, 5, 'RET005', '2026-01-11 08:00:00', N'Hàng không đạt yêu cầu chất lượng', 'Completed', 1),
-(6, 6, 'RET006', '2026-01-12 08:00:00', N'Hàng không đạt yêu cầu chất lượng', 'Completed', 2),
-(7, 7, 'RET007', '2026-01-13 08:00:00', N'Hàng không đạt yêu cầu chất lượng', 'Completed', 3),
-(8, 8, 'RET008', '2026-01-14 08:00:00', N'Hàng không đạt yêu cầu chất lượng', 'Pending', 4),
-(9, 9, 'RET009', '2026-01-15 08:00:00', N'Hàng không đạt yêu cầu chất lượng', 'Pending', 1),
-(10, 10, 'RET010', '2026-01-16 08:00:00', N'Hàng không đạt yêu cầu chất lượng', 'Pending', 2);
+(3, 3, 'RET001', '2026-01-08 08:00:00', N'Hàng không đạt yêu cầu chất lượng', 'Completed', 4),
+(7, 7, 'RET002', '2026-01-12 08:00:00', N'Hàng không đạt yêu cầu chất lượng', 'Completed', 3),
+(11, 11, 'RET003', '2026-01-16 08:00:00', N'Hàng không đạt yêu cầu chất lượng', 'Completed', 4),
+(15, 15, 'RET004', '2026-01-20 08:00:00', N'Hàng không đạt yêu cầu chất lượng', 'Pending', 3);
 
-INSERT INTO SupplierReturnDetails (ReturnId, BatchId, Quantity, Reason)
+INSERT INTO SupplierReturnDetails
+    (ReturnId, ProvisionalDetailId, Quantity, Reason)
 VALUES
-(1, 1, 6, N'Hàng bị dập hoặc không đạt chuẩn'),
-(2, 2, 7, N'Hàng bị dập hoặc không đạt chuẩn'),
-(3, 3, 8, N'Hàng bị dập hoặc không đạt chuẩn'),
-(4, 4, 9, N'Hàng bị dập hoặc không đạt chuẩn'),
-(5, 5, 10, N'Hàng bị dập hoặc không đạt chuẩn'),
-(6, 6, 11, N'Hàng bị dập hoặc không đạt chuẩn'),
-(7, 7, 12, N'Hàng bị dập hoặc không đạt chuẩn'),
-(8, 8, 13, N'Hàng bị dập hoặc không đạt chuẩn'),
-(9, 9, 14, N'Hàng bị dập hoặc không đạt chuẩn'),
-(10, 10, 15, N'Hàng bị dập hoặc không đạt chuẩn');
+(1, 3, 109, N'Hàng không đạt yêu cầu chất lượng'),
+(2, 7, 121, N'Hàng không đạt yêu cầu chất lượng'),
+(3, 11, 133, N'Hàng không đạt yêu cầu chất lượng'),
+(4, 15, 145, N'Hàng không đạt yêu cầu chất lượng');
 
 INSERT INTO ExportOrders (CustomerId, OrderNumber, OrderDate, Status, CreatedBy)
 VALUES
@@ -808,28 +799,25 @@ VALUES
 (19, 19, 20, 1, 29, '2026-01-30 08:00:00', N'Điều chuyển hàng giữa các vị trí'),
 (20, 20, 1, 2, 30, '2026-01-31 08:00:00', N'Điều chuyển hàng giữa các vị trí');
 
-INSERT INTO QualityInspections (BatchId, InspectedBy, InspectionDate, Grade, Result, Notes)
+INSERT INTO QualityInspections
+    (ProvisionalReceiptId, InspectedBy, InspectionDate, Grade, Result, Notes)
 VALUES
-(1, 3, '2026-01-05 08:00:00', 'A', 'Passed', N'Kết quả kiểm tra chất lượng lô hàng'),
-(2, 4, '2026-01-06 08:00:00', 'B', 'Passed', N'Kết quả kiểm tra chất lượng lô hàng'),
-(3, 1, '2026-01-07 08:00:00', 'C', 'Failed', N'Kết quả kiểm tra chất lượng lô hàng'),
-(4, 2, '2026-01-08 08:00:00', 'A', 'Passed', N'Kết quả kiểm tra chất lượng lô hàng'),
-(5, 3, '2026-01-09 08:00:00', 'A', 'Passed', N'Kết quả kiểm tra chất lượng lô hàng'),
-(6, 4, '2026-01-10 08:00:00', 'B', 'Passed', N'Kết quả kiểm tra chất lượng lô hàng'),
-(7, 1, '2026-01-11 08:00:00', 'C', 'Failed', N'Kết quả kiểm tra chất lượng lô hàng'),
-(8, 2, '2026-01-12 08:00:00', 'A', 'Passed', N'Kết quả kiểm tra chất lượng lô hàng'),
-(9, 3, '2026-01-13 08:00:00', 'A', 'Passed', N'Kết quả kiểm tra chất lượng lô hàng'),
-(10, 4, '2026-01-14 08:00:00', 'B', 'Passed', N'Kết quả kiểm tra chất lượng lô hàng'),
-(11, 1, '2026-01-15 08:00:00', 'C', 'Failed', N'Kết quả kiểm tra chất lượng lô hàng'),
-(12, 2, '2026-01-16 08:00:00', 'A', 'Passed', N'Kết quả kiểm tra chất lượng lô hàng'),
-(13, 3, '2026-01-17 08:00:00', 'A', 'Passed', N'Kết quả kiểm tra chất lượng lô hàng'),
-(14, 4, '2026-01-18 08:00:00', 'B', 'Passed', N'Kết quả kiểm tra chất lượng lô hàng'),
-(15, 1, '2026-01-19 08:00:00', 'C', 'Failed', N'Kết quả kiểm tra chất lượng lô hàng'),
-(16, 2, '2026-01-20 08:00:00', 'A', 'Passed', N'Kết quả kiểm tra chất lượng lô hàng'),
-(17, 3, '2026-01-21 08:00:00', 'A', 'Passed', N'Kết quả kiểm tra chất lượng lô hàng'),
-(18, 4, '2026-01-22 08:00:00', 'B', 'Passed', N'Kết quả kiểm tra chất lượng lô hàng'),
-(19, 1, '2026-01-23 08:00:00', 'C', 'Failed', N'Kết quả kiểm tra chất lượng lô hàng'),
-(20, 2, '2026-01-24 08:00:00', 'A', 'Passed', N'Kết quả kiểm tra chất lượng lô hàng');
+(1, 3, '2026-01-05 08:00:00', 'A', 'Passed', N'Chất lượng đạt yêu cầu'),
+(2, 4, '2026-01-06 08:00:00', 'B', 'Passed', N'Chất lượng đạt yêu cầu'),
+(3, 1, '2026-01-07 08:00:00', 'C', 'Failed', N'Hàng bị dập và không đạt tiêu chuẩn'),
+(4, 2, '2026-01-08 08:00:00', 'A', 'Passed', N'Chất lượng đạt yêu cầu'),
+(5, 3, '2026-01-09 08:00:00', 'A', 'Passed', N'Chất lượng đạt yêu cầu'),
+(6, 4, '2026-01-10 08:00:00', 'B', 'Passed', N'Chất lượng đạt yêu cầu'),
+(7, 1, '2026-01-11 08:00:00', 'C', 'Failed', N'Hàng bị hư hỏng trong quá trình vận chuyển'),
+(8, 2, '2026-01-12 08:00:00', 'A', 'Passed', N'Chất lượng đạt yêu cầu'),
+(9, 3, '2026-01-13 08:00:00', 'A', 'Passed', N'Chất lượng đạt yêu cầu'),
+(10, 4, '2026-01-14 08:00:00', 'B', 'Passed', N'Chất lượng đạt yêu cầu'),
+(11, 1, '2026-01-15 08:00:00', 'C', 'Failed', N'Hàng không đạt tiêu chuẩn chất lượng'),
+(12, 2, '2026-01-16 08:00:00', 'A', 'Passed', N'Chất lượng đạt yêu cầu'),
+(13, 3, '2026-01-17 08:00:00', 'A', 'Passed', N'Chất lượng đạt yêu cầu'),
+(14, 4, '2026-01-18 08:00:00', 'B', 'Passed', N'Chất lượng đạt yêu cầu'),
+(15, 1, '2026-01-19 08:00:00', 'C', 'Failed', N'Hàng bị dập hoặc hư hỏng'),
+(16, 2, '2026-01-20 08:00:00', 'A', 'Passed', N'Chất lượng đạt yêu cầu');
 
 INSERT INTO LossReports (BatchId, ReportedBy, LossType, Quantity, Reason, Status, ReportedDate)
 VALUES
