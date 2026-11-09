@@ -29,6 +29,28 @@ CREATE TABLE SystemLogs (
     FOREIGN KEY (UserId) REFERENCES Users(UserId)
 );
 
+CREATE TABLE OrderRejectionNotifications (
+    NotificationId INT IDENTITY(1,1) PRIMARY KEY,
+    RecipientUserId INT NOT NULL,
+    RejectedBy INT NOT NULL,
+    Decision VARCHAR(20) NOT NULL DEFAULT 'Rejected'
+        CHECK (Decision IN ('Accepted', 'Rejected')),
+    OrderType VARCHAR(30) NOT NULL
+        CHECK (OrderType IN ('Import Order', 'Export Order', 'Supplier Return')),
+    OrderId INT NOT NULL,
+    OrderNumber VARCHAR(50) NOT NULL,
+    CreatedAt DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),
+    IsDismissed BIT NOT NULL DEFAULT 0,
+    DismissedAt DATETIME2 NULL,
+    CONSTRAINT FK_OrderRejectionNotifications_Recipient
+        FOREIGN KEY (RecipientUserId) REFERENCES Users(UserId),
+    CONSTRAINT FK_OrderRejectionNotifications_RejectedBy
+        FOREIGN KEY (RejectedBy) REFERENCES Users(UserId)
+);
+
+CREATE INDEX IX_OrderRejectionNotifications_Recipient_Dismissed_Created
+    ON OrderRejectionNotifications (RecipientUserId, IsDismissed, CreatedAt DESC);
+
 CREATE TABLE Categories (
     CategoryId INT IDENTITY(1,1) PRIMARY KEY,
     CategoryName NVARCHAR(100) UNIQUE NOT NULL,
@@ -104,7 +126,8 @@ CREATE TABLE ProvisionalReceipts (
     ReceiptNumber VARCHAR(50) UNIQUE NOT NULL,
     ReceivedDate DATETIME NOT NULL,
     ReceivedBy INT NOT NULL,
-    Status VARCHAR(20) NOT NULL DEFAULT 'Pending',
+        Status VARCHAR(20) NOT NULL DEFAULT 'Not Approved'
+        CHECK (Status IN ('Awaiting Approval', 'Not Approved', 'Completed')),
     QCStatus VARCHAR(20) NOT NULL DEFAULT 'Pending',
     Notes NVARCHAR(500),
     FOREIGN KEY (ImportOrderId) REFERENCES ImportOrders(ImportOrderId),
@@ -121,7 +144,7 @@ CREATE TABLE ProvisionalReceiptDetails (
     FOREIGN KEY (ProductId) REFERENCES Products(ProductId)
 );
 
-CREATE TABLE ProvisionalReceiptDetailGrades (
+CREATE TABLE ProductDetailGrades (
     DetailGradeId INT IDENTITY(1,1) PRIMARY KEY,
     ProvisionalDetailId INT NOT NULL,
     GradeType VARCHAR(20) NOT NULL
@@ -251,7 +274,6 @@ CREATE TABLE QualityInspections (
     ProvisionalReceiptId INT NOT NULL,
     InspectedBy INT NOT NULL,
     InspectionDate DATETIME NOT NULL,
-    Grade VARCHAR(20) NOT NULL,
     Result VARCHAR(20) NOT NULL,
     Notes NVARCHAR(500),
     FOREIGN KEY (ProvisionalReceiptId) REFERENCES ProvisionalReceipts(ProvisionalReceiptId),
@@ -532,26 +554,26 @@ VALUES
 INSERT INTO ProvisionalReceipts
     (ImportOrderId, ReceiptNumber, ReceivedDate, ReceivedBy, Status, QCStatus, Notes)
 VALUES
-(1, 'PR001', '2026-01-04 08:00:00', 2, 'Completed', 'Passed', N'Hàng được tiếp nhận và kiểm tra'),
-(2, 'PR002', '2026-01-05 08:00:00', 3, 'Completed', 'Passed', N'Hàng được tiếp nhận và kiểm tra'),
-(3, 'PR003', '2026-01-06 08:00:00', 4, 'Completed', 'Passed', N'Hàng không đạt yêu cầu chất lượng'),
-(4, 'PR004', '2026-01-07 08:00:00', 1, 'Completed', 'Passed', N'Hàng được tiếp nhận và kiểm tra'),
-(5, 'PR005', '2026-01-08 08:00:00', 2, 'Completed', 'Passed', N'Hàng được tiếp nhận và kiểm tra'),
-(6, 'PR006', '2026-01-09 08:00:00', 3, 'Completed', 'Passed', N'Hàng được tiếp nhận và kiểm tra'),
-(7, 'PR007', '2026-01-10 08:00:00', 4, 'Completed', 'Failed', N'Hàng không đạt yêu cầu chất lượng'),
-(8, 'PR008', '2026-01-11 08:00:00', 1, 'Completed', 'Failed', N'Hàng được tiếp nhận và kiểm tra'),
-(9, 'PR009', '2026-01-12 08:00:00', 2, 'Completed', 'Failed', N'Hàng được tiếp nhận và kiểm tra'),
-(10, 'PR010', '2026-01-13 08:00:00', 3, 'Pending', 'Pending', N'Hàng được tiếp nhận và kiểm tra'),
-(11, 'PR011', '2026-01-14 08:00:00', 4, 'Pending', 'Pending', N'Hàng không đạt yêu cầu chất lượng'),
-(12, 'PR012', '2026-01-15 08:00:00', 1, 'Pending', 'Pending', N'Hàng được tiếp nhận và kiểm tra'),
-(13, 'PR013', '2026-01-16 08:00:00', 2, 'Pending', 'Pending', N'Hàng được tiếp nhận và kiểm tra'),
-(14, 'PR014', '2026-01-17 08:00:00', 3, 'Pending', 'Pending', N'Hàng được tiếp nhận và kiểm tra'),
-(15, 'PR015', '2026-01-18 08:00:00', 4, 'Pending', 'Pending', N'Hàng không đạt yêu cầu chất lượng'),
-(16, 'PR016', '2026-01-19 08:00:00', 1, 'Pending', 'Pending', N'Hàng được tiếp nhận và kiểm tra'),
-(17, 'PR017', '2026-01-20 08:00:00', 2, 'Pending', 'Pending', N'Hàng đang chờ kiểm tra chất lượng'),
-(18, 'PR018', '2026-01-21 08:00:00', 3, 'Pending', 'Pending', N'Hàng đang chờ kiểm tra chất lượng'),
-(19, 'PR019', '2026-01-22 08:00:00', 4, 'Pending', 'Pending', N'Hàng đang chờ kiểm tra chất lượng'),
-(20, 'PR020', '2026-01-23 08:00:00', 1, 'Pending', 'Pending', N'Hàng đang chờ kiểm tra chất lượng');
+(1, 'PR001', '2026-01-04 08:00:00', 2, 'Not Approved', 'Passed', N'Hàng được tiếp nhận và kiểm tra'),
+(2, 'PR002', '2026-01-05 08:00:00', 3, 'Not Approved', 'Passed', N'Hàng được tiếp nhận và kiểm tra'),
+(3, 'PR003', '2026-01-06 08:00:00', 4, 'Not Approved', 'Passed', N'Hàng không đạt yêu cầu chất lượng'),
+(4, 'PR004', '2026-01-07 08:00:00', 1, 'Not Approved', 'Passed', N'Hàng được tiếp nhận và kiểm tra'),
+(5, 'PR005', '2026-01-08 08:00:00', 2, 'Not Approved', 'Passed', N'Hàng được tiếp nhận và kiểm tra'),
+(6, 'PR006', '2026-01-09 08:00:00', 3, 'Not Approved', 'Passed', N'Hàng được tiếp nhận và kiểm tra'),
+(7, 'PR007', '2026-01-10 08:00:00', 4, 'Not Approved', 'Failed', N'Hàng không đạt yêu cầu chất lượng'),
+(8, 'PR008', '2026-01-11 08:00:00', 1, 'Not Approved', 'Failed', N'Hàng được tiếp nhận và kiểm tra'),
+(9, 'PR009', '2026-01-12 08:00:00', 2, 'Not Approved', 'Failed', N'Hàng được tiếp nhận và kiểm tra'),
+(10, 'PR010', '2026-01-13 08:00:00', 3, 'Not Approved', 'Pending', N'Hàng được tiếp nhận và kiểm tra'),
+(11, 'PR011', '2026-01-14 08:00:00', 4, 'Not Approved', 'Pending', N'Hàng không đạt yêu cầu chất lượng'),
+(12, 'PR012', '2026-01-15 08:00:00', 1, 'Not Approved', 'Pending', N'Hàng được tiếp nhận và kiểm tra'),
+(13, 'PR013', '2026-01-16 08:00:00', 2, 'Not Approved', 'Pending', N'Hàng được tiếp nhận và kiểm tra'),
+(14, 'PR014', '2026-01-17 08:00:00', 3, 'Not Approved', 'Pending', N'Hàng được tiếp nhận và kiểm tra'),
+(15, 'PR015', '2026-01-18 08:00:00', 4, 'Not Approved', 'Pending', N'Hàng không đạt yêu cầu chất lượng'),
+(16, 'PR016', '2026-01-19 08:00:00', 1, 'Not Approved', 'Pending', N'Hàng được tiếp nhận và kiểm tra'),
+(17, 'PR017', '2026-01-20 08:00:00', 2, 'Not Approved', 'Pending', N'Hàng đang chờ kiểm tra chất lượng'),
+(18, 'PR018', '2026-01-21 08:00:00', 3, 'Not Approved', 'Pending', N'Hàng đang chờ kiểm tra chất lượng'),
+(19, 'PR019', '2026-01-22 08:00:00', 4, 'Not Approved', 'Pending', N'Hàng đang chờ kiểm tra chất lượng'),
+(20, 'PR020', '2026-01-23 08:00:00', 1, 'Not Approved', 'Pending', N'Hàng đang chờ kiểm tra chất lượng');
 
 INSERT INTO ProvisionalReceiptDetails (ProvisionalReceiptId, ProductId, Quantity, Unit)
 VALUES
@@ -596,7 +618,7 @@ VALUES
 (20, 20, 220, N'kg'),
 (20, 1, 270, N'kg');
 
-INSERT INTO ProvisionalReceiptDetailGrades (ProvisionalDetailId, GradeType, Quantity)
+INSERT INTO ProductDetailGrades (ProvisionalDetailId, GradeType, Quantity)
 VALUES
 (1, 'A', 100.000), (1, 'B', 40.000), (1, 'Damaged', 10.000),
 (2, 'A', 135.000), (2, 'B', 53.000), (2, 'Damaged', 12.000),
@@ -608,7 +630,7 @@ VALUES
 (8, 'A', 158.000), (8, 'B', 61.000), (8, 'Damaged', 11.000),
 (9, 'A', 131.000), (9, 'B', 45.000), (9, 'Damaged', 14.000),
 (10, 'A', 168.000), (10, 'B', 63.000), (10, 'Damaged', 9.000),
-(11, 'A', 132.000), (11, 'B', 55.000), (11, 'Damaged', 3.000),
+(11, 'A', 142.000), (11, 'B', 55.000), (11, 'Damaged', 3.000),
 (12, 'A', 181.000), (12, 'B', 63.000), (12, 'Damaged', 6.000),
 (13, 'A', 92.000), (13, 'B', 48.000), (13, 'Damaged', 10.000),
 (14, 'A', 133.000), (14, 'B', 55.000), (14, 'Damaged', 12.000),
@@ -645,347 +667,4 @@ VALUES
 (2, 2, 'BATCH002', '2026-01-05 08:00:00', '2026-01-12 08:00:00', 320, 300, 20, 280, 10800, 'B', 'Available'),
 (3, 3, 'BATCH003', '2026-01-06 08:00:00', '2026-01-14 08:00:00', 330, 300, 30, 270, 11200, 'A', 'Available'),
 (4, 4, 'BATCH004', '2026-01-07 08:00:00', '2026-01-16 08:00:00', 340, 300, 0, 300, 11600, 'B', 'Available'),
-(5, 5, 'BATCH005', '2026-01-08 08:00:00', '2026-01-18 08:00:00', 350, 300, 10, 290, 12000, 'A', 'Available'),
-(6, 6, 'BATCH006', '2026-01-09 08:00:00', '2026-01-20 08:00:00', 360, 360, 20, 340, 12400, 'A', 'Available'),
-(7, 7, 'BATCH007', '2026-01-10 08:00:00', '2026-01-22 08:00:00', 370, 360, 30, 330, 12800, 'B', 'Available'),
-(8, 8, 'BATCH008', '2026-01-11 08:00:00', '2026-01-16 08:00:00', 380, 360, 0, 360, 13200, 'A', 'Available'),
-(9, 9, 'BATCH009', '2026-01-12 08:00:00', '2026-01-18 08:00:00', 390, 360, 10, 350, 13600, 'B', 'Available'),
-(10, 10, 'BATCH010', '2026-01-13 08:00:00', '2026-01-20 08:00:00', 400, 360, 20, 340, 14000, 'A', 'Available'),
-(11, 11, 'BATCH011', '2026-01-14 08:00:00', '2026-01-22 08:00:00', 410, 360, 30, 330, 14400, 'A', 'Available'),
-(12, 12, 'BATCH012', '2026-01-15 08:00:00', '2026-01-24 08:00:00', 420, 420, 0, 420, 14800, 'B', 'Available'),
-(13, 13, 'BATCH013', '2026-01-16 08:00:00', '2026-01-26 08:00:00', 430, 420, 10, 410, 15200, 'A', 'Available'),
-(14, 14, 'BATCH014', '2026-01-17 08:00:00', '2026-01-28 08:00:00', 440, 420, 20, 400, 15600, 'B', 'Available'),
-(15, 15, 'BATCH015', '2026-01-18 08:00:00', '2026-01-30 08:00:00', 450, 420, 30, 390, 16000, 'A', 'Available'),
-(16, 16, 'BATCH016', '2026-01-19 08:00:00', '2026-01-24 08:00:00', 460, 420, 0, 420, 16400, 'A', 'Available'),
-(17, 17, 'BATCH017', '2026-01-20 08:00:00', '2026-01-26 08:00:00', 470, 420, 10, 410, 16800, 'B', 'Available'),
-(18, 18, 'BATCH018', '2026-01-21 08:00:00', '2026-01-28 08:00:00', 480, 480, 20, 460, 17200, 'A', 'Available'),
-(19, 19, 'BATCH019', '2026-01-22 08:00:00', '2026-01-30 08:00:00', 490, 480, 30, 450, 17600, 'B', 'Quarantine'),
-(20, 20, 'BATCH020', '2026-01-23 08:00:00', '2026-02-01 08:00:00', 500, 480, 0, 480, 18000, 'A', 'Expired');
-
-INSERT INTO GoodsReceipts (ImportOrderId, ReceiptNumber, ReceivedDate, ReceivedBy, Status, Notes)
-VALUES
-(1, 'GRN001', '2026-01-04 09:00:00', 3, 'Completed', N'Đã đối chiếu với phiếu nhập'),
-(2, 'GRN002', '2026-01-05 09:00:00', 4, 'Completed', N'Đã đối chiếu với phiếu nhập'),
-(3, 'GRN003', '2026-01-06 09:00:00', 1, 'Completed', N'Đã đối chiếu với phiếu nhập'),
-(4, 'GRN004', '2026-01-07 09:00:00', 2, 'Completed', N'Đã đối chiếu với phiếu nhập'),
-(5, 'GRN005', '2026-01-08 09:00:00', 3, 'Completed', N'Đã đối chiếu với phiếu nhập'),
-(6, 'GRN006', '2026-01-09 09:00:00', 4, 'Completed', N'Đã đối chiếu với phiếu nhập'),
-(7, 'GRN007', '2026-01-10 09:00:00', 1, 'Completed', N'Đã đối chiếu với phiếu nhập'),
-(8, 'GRN008', '2026-01-11 09:00:00', 2, 'Pending', N'Đã đối chiếu với phiếu nhập'),
-(9, 'GRN009', '2026-01-12 09:00:00', 3, 'Pending', N'Đã đối chiếu với phiếu nhập'),
-(10, 'GRN010', '2026-01-13 09:00:00', 4, 'Pending', N'Đã đối chiếu với phiếu nhập'),
-(11, 'GRN011', '2026-01-14 09:00:00', 1, 'Pending', N'Đã đối chiếu với phiếu nhập'),
-(12, 'GRN012', '2026-01-15 09:00:00', 2, 'Pending', N'Đã đối chiếu với phiếu nhập'),
-(13, 'GRN013', '2026-01-16 09:00:00', 3, 'Pending', N'Đã đối chiếu với phiếu nhập'),
-(14, 'GRN014', '2026-01-17 09:00:00', 4, 'Pending', N'Đã đối chiếu với phiếu nhập'),
-(15, 'GRN015', '2026-01-18 09:00:00', 1, 'Pending', N'Đã đối chiếu với phiếu nhập'),
-(16, 'GRN016', '2026-01-19 09:00:00', 2, 'Pending', N'Đã đối chiếu với phiếu nhập'),
-(17, 'GRN017', '2026-01-20 09:00:00', 3, 'Pending', N'Đã đối chiếu với phiếu nhập'),
-(18, 'GRN018', '2026-01-21 09:00:00', 4, 'Pending', N'Đã đối chiếu với phiếu nhập'),
-(19, 'GRN019', '2026-01-22 09:00:00', 1, 'Pending', N'Đã đối chiếu với phiếu nhập'),
-(20, 'GRN020', '2026-01-23 09:00:00', 2, 'Pending', N'Đã đối chiếu với phiếu nhập');
-
-INSERT INTO GoodsReceiptDetails (ReceiptId, ProductId, BatchId, Quantity, Unit, UnitCost)
-VALUES
-(1, 1, 1, 84, N'kg', 10850),
-(2, 2, 2, 88, N'kg', 11200),
-(3, 3, 3, 92, N'kg', 11550),
-(4, 4, 4, 96, N'kg', 11900),
-(5, 5, 5, 100, N'kg', 12250),
-(6, 6, 6, 104, N'kg', 12600),
-(7, 7, 7, 108, N'kg', 12950),
-(8, 8, 8, 112, N'kg', 13300),
-(9, 9, 9, 116, N'kg', 13650),
-(10, 10, 10, 120, N'kg', 14000),
-(11, 11, 11, 124, N'kg', 14350),
-(12, 12, 12, 128, N'kg', 14700),
-(13, 13, 13, 132, N'kg', 15050),
-(14, 14, 14, 136, N'kg', 15400),
-(15, 15, 15, 140, N'kg', 15750),
-(16, 16, 16, 144, N'kg', 16100),
-(17, 17, 17, 148, N'kg', 16450),
-(18, 18, 18, 152, N'kg', 16800),
-(19, 19, 19, 156, N'kg', 17150),
-(20, 20, 20, 160, N'kg', 17500),
-(1, 1, 1, 164, N'kg', 17850),
-(2, 2, 2, 168, N'kg', 18200),
-(3, 3, 3, 172, N'kg', 18550),
-(4, 4, 4, 176, N'kg', 18900),
-(5, 5, 5, 180, N'kg', 19250),
-(6, 6, 6, 184, N'kg', 19600),
-(7, 7, 7, 188, N'kg', 19950),
-(8, 8, 8, 192, N'kg', 20300),
-(9, 9, 9, 196, N'kg', 20650),
-(10, 10, 10, 200, N'kg', 21000),
-(11, 11, 11, 204, N'kg', 21350),
-(12, 12, 12, 208, N'kg', 21700),
-(13, 13, 13, 212, N'kg', 22050),
-(14, 14, 14, 216, N'kg', 22400),
-(15, 15, 15, 220, N'kg', 22750),
-(16, 16, 16, 224, N'kg', 23100),
-(17, 17, 17, 228, N'kg', 23450),
-(18, 18, 18, 232, N'kg', 23800),
-(19, 19, 19, 236, N'kg', 24150),
-(20, 20, 20, 240, N'kg', 24500);
-
-INSERT INTO SupplierReturns (SupplierId, ImportOrderId, ReturnNumber, ReturnDate, Reason, Status, CreatedBy)
-VALUES
-(3, 3, 'RET001', '2026-01-08 08:00:00', N'Hàng không đạt yêu cầu chất lượng', 'Completed', 4),
-(7, 7, 'RET002', '2026-01-12 08:00:00', N'Hàng không đạt yêu cầu chất lượng', 'Completed', 3),
-(11, 11, 'RET003', '2026-01-16 08:00:00', N'Hàng không đạt yêu cầu chất lượng', 'Completed', 4),
-(15, 15, 'RET004', '2026-01-20 08:00:00', N'Hàng không đạt yêu cầu chất lượng', 'Pending', 3);
-
-INSERT INTO SupplierReturnDetails
-    (ReturnId, ProvisionalDetailId, Quantity, Reason)
-VALUES
-(1, 3, 109, N'Hàng không đạt yêu cầu chất lượng'),
-(2, 7, 121, N'Hàng không đạt yêu cầu chất lượng'),
-(3, 11, 133, N'Hàng không đạt yêu cầu chất lượng'),
-(4, 15, 145, N'Hàng không đạt yêu cầu chất lượng');
-
-INSERT INTO ExportOrders (CustomerId, OrderNumber, OrderDate, Status, CreatedBy)
-VALUES
-(1, 'SO001', '2026-01-09 08:00:00', 'Completed', 2),
-(2, 'SO002', '2026-01-10 08:00:00', 'Completed', 3),
-(3, 'SO003', '2026-01-11 08:00:00', 'Completed', 4),
-(4, 'SO004', '2026-01-12 08:00:00', 'Completed', 5),
-(5, 'SO005', '2026-01-13 08:00:00', 'Completed', 1),
-(6, 'SO006', '2026-01-14 08:00:00', 'Completed', 2),
-(7, 'SO007', '2026-01-15 08:00:00', 'Pending', 3),
-(8, 'SO008', '2026-01-16 08:00:00', 'Pending', 4),
-(9, 'SO009', '2026-01-17 08:00:00', 'Pending', 5),
-(10, 'SO010', '2026-01-18 08:00:00', 'Pending', 1),
-(11, 'SO011', '2026-01-19 08:00:00', 'Pending', 2),
-(12, 'SO012', '2026-01-20 08:00:00', 'Pending', 3),
-(13, 'SO013', '2026-01-21 08:00:00', 'Pending', 4),
-(14, 'SO014', '2026-01-22 08:00:00', 'Pending', 5),
-(15, 'SO015', '2026-01-23 08:00:00', 'Pending', 1),
-(16, 'SO016', '2026-01-24 08:00:00', 'Pending', 2),
-(17, 'SO017', '2026-01-25 08:00:00', 'Pending', 3),
-(18, 'SO018', '2026-01-26 08:00:00', 'Pending', 4),
-(19, 'SO019', '2026-01-27 08:00:00', 'Pending', 5),
-(20, 'SO020', '2026-01-28 08:00:00', 'Pending', 1);
-
-INSERT INTO ExportOrderDetails (ExportOrderId, ProductId, Quantity, Unit, UnitPrice)
-VALUES
-(1, 9, 32, N'kg', 15500),
-(2, 10, 34, N'kg', 16000),
-(3, 11, 36, N'kg', 16500),
-(4, 12, 38, N'kg', 17000),
-(5, 13, 40, N'kg', 17500),
-(6, 14, 42, N'kg', 18000),
-(7, 15, 44, N'kg', 18500),
-(8, 16, 46, N'kg', 19000),
-(9, 17, 48, N'kg', 19500),
-(10, 18, 50, N'kg', 20000),
-(11, 19, 52, N'kg', 20500),
-(12, 20, 54, N'kg', 21000),
-(13, 1, 56, N'kg', 21500),
-(14, 2, 58, N'kg', 22000),
-(15, 3, 60, N'kg', 22500),
-(16, 4, 62, N'kg', 23000),
-(17, 5, 64, N'kg', 23500),
-(18, 6, 66, N'kg', 24000),
-(19, 7, 68, N'kg', 24500),
-(20, 8, 70, N'kg', 25000),
-(1, 9, 72, N'kg', 25500),
-(2, 10, 74, N'kg', 26000),
-(3, 11, 76, N'kg', 26500),
-(4, 12, 78, N'kg', 27000),
-(5, 13, 80, N'kg', 27500),
-(6, 14, 82, N'kg', 28000),
-(7, 15, 84, N'kg', 28500),
-(8, 16, 86, N'kg', 29000),
-(9, 17, 88, N'kg', 29500),
-(10, 18, 90, N'kg', 30000),
-(11, 19, 92, N'kg', 30500),
-(12, 20, 94, N'kg', 31000),
-(13, 1, 96, N'kg', 31500),
-(14, 2, 98, N'kg', 32000),
-(15, 3, 100, N'kg', 32500),
-(16, 4, 102, N'kg', 33000),
-(17, 5, 104, N'kg', 33500),
-(18, 6, 106, N'kg', 34000),
-(19, 7, 108, N'kg', 34500),
-(20, 8, 110, N'kg', 35000);
-
-INSERT INTO StockAllocations (ExportDetailId, BatchId, Quantity, AllocatedDate, Status)
-VALUES
-(1, 1, 21, '2026-01-11 08:00:00', 'Allocated'),
-(2, 2, 22, '2026-01-12 08:00:00', 'Allocated'),
-(3, 3, 23, '2026-01-13 08:00:00', 'Allocated'),
-(4, 4, 24, '2026-01-14 08:00:00', 'Allocated'),
-(5, 5, 25, '2026-01-15 08:00:00', 'Allocated'),
-(6, 6, 26, '2026-01-16 08:00:00', 'Allocated'),
-(7, 7, 27, '2026-01-17 08:00:00', 'Allocated'),
-(8, 8, 28, '2026-01-18 08:00:00', 'Allocated'),
-(9, 9, 29, '2026-01-19 08:00:00', 'Allocated'),
-(10, 10, 30, '2026-01-20 08:00:00', 'Allocated'),
-(11, 11, 31, '2026-01-21 08:00:00', 'Allocated'),
-(12, 12, 32, '2026-01-22 08:00:00', 'Allocated'),
-(13, 13, 33, '2026-01-23 08:00:00', 'Allocated'),
-(14, 14, 34, '2026-01-24 08:00:00', 'Allocated'),
-(15, 15, 35, '2026-01-25 08:00:00', 'Allocated'),
-(16, 16, 36, '2026-01-26 08:00:00', 'Pending'),
-(17, 17, 37, '2026-01-27 08:00:00', 'Pending'),
-(18, 18, 38, '2026-01-28 08:00:00', 'Pending'),
-(19, 19, 39, '2026-01-29 08:00:00', 'Pending'),
-(20, 20, 40, '2026-01-30 08:00:00', 'Pending');
-
-INSERT INTO StockMovements (BatchId, FromLocationId, ToLocationId, MovedBy, Quantity, MovementDate, Reason)
-VALUES
-(1, 1, 2, 3, 11, '2026-01-12 08:00:00', N'Điều chuyển hàng giữa các vị trí'),
-(2, 2, 3, 4, 12, '2026-01-13 08:00:00', N'Điều chuyển hàng giữa các vị trí'),
-(3, 3, 4, 1, 13, '2026-01-14 08:00:00', N'Điều chuyển hàng giữa các vị trí'),
-(4, 4, 5, 2, 14, '2026-01-15 08:00:00', N'Điều chuyển hàng giữa các vị trí'),
-(5, 5, 6, 3, 15, '2026-01-16 08:00:00', N'Điều chuyển hàng giữa các vị trí'),
-(6, 6, 7, 4, 16, '2026-01-17 08:00:00', N'Điều chuyển hàng giữa các vị trí'),
-(7, 7, 8, 1, 17, '2026-01-18 08:00:00', N'Điều chuyển hàng giữa các vị trí'),
-(8, 8, 9, 2, 18, '2026-01-19 08:00:00', N'Điều chuyển hàng giữa các vị trí'),
-(9, 9, 10, 3, 19, '2026-01-20 08:00:00', N'Điều chuyển hàng giữa các vị trí'),
-(10, 10, 11, 4, 20, '2026-01-21 08:00:00', N'Điều chuyển hàng giữa các vị trí'),
-(11, 11, 12, 1, 21, '2026-01-22 08:00:00', N'Điều chuyển hàng giữa các vị trí'),
-(12, 12, 13, 2, 22, '2026-01-23 08:00:00', N'Điều chuyển hàng giữa các vị trí'),
-(13, 13, 14, 3, 23, '2026-01-24 08:00:00', N'Điều chuyển hàng giữa các vị trí'),
-(14, 14, 15, 4, 24, '2026-01-25 08:00:00', N'Điều chuyển hàng giữa các vị trí'),
-(15, 15, 16, 1, 25, '2026-01-26 08:00:00', N'Điều chuyển hàng giữa các vị trí'),
-(16, 16, 17, 2, 26, '2026-01-27 08:00:00', N'Điều chuyển hàng giữa các vị trí'),
-(17, 17, 18, 3, 27, '2026-01-28 08:00:00', N'Điều chuyển hàng giữa các vị trí'),
-(18, 18, 19, 4, 28, '2026-01-29 08:00:00', N'Điều chuyển hàng giữa các vị trí'),
-(19, 19, 20, 1, 29, '2026-01-30 08:00:00', N'Điều chuyển hàng giữa các vị trí'),
-(20, 20, 1, 2, 30, '2026-01-31 08:00:00', N'Điều chuyển hàng giữa các vị trí');
-
-INSERT INTO QualityInspections
-    (ProvisionalReceiptId, InspectedBy, InspectionDate, Grade, Result, Notes)
-VALUES
-(1, 3, '2026-01-05 08:00:00', 'A', 'Passed', N'Chất lượng đạt yêu cầu'),
-(2, 4, '2026-01-06 08:00:00', 'B', 'Passed', N'Chất lượng đạt yêu cầu'),
-(3, 1, '2026-01-07 08:00:00', 'C', 'Failed', N'Hàng bị dập và không đạt tiêu chuẩn'),
-(4, 2, '2026-01-08 08:00:00', 'A', 'Passed', N'Chất lượng đạt yêu cầu'),
-(5, 3, '2026-01-09 08:00:00', 'A', 'Passed', N'Chất lượng đạt yêu cầu'),
-(6, 4, '2026-01-10 08:00:00', 'B', 'Passed', N'Chất lượng đạt yêu cầu'),
-(7, 1, '2026-01-11 08:00:00', 'C', 'Failed', N'Hàng bị hư hỏng trong quá trình vận chuyển'),
-(8, 2, '2026-01-12 08:00:00', 'A', 'Passed', N'Chất lượng đạt yêu cầu'),
-(9, 3, '2026-01-13 08:00:00', 'A', 'Passed', N'Chất lượng đạt yêu cầu'),
-(10, 4, '2026-01-14 08:00:00', 'B', 'Passed', N'Chất lượng đạt yêu cầu'),
-(11, 1, '2026-01-15 08:00:00', 'C', 'Failed', N'Hàng không đạt tiêu chuẩn chất lượng'),
-(12, 2, '2026-01-16 08:00:00', 'A', 'Passed', N'Chất lượng đạt yêu cầu'),
-(13, 3, '2026-01-17 08:00:00', 'A', 'Passed', N'Chất lượng đạt yêu cầu'),
-(14, 4, '2026-01-18 08:00:00', 'B', 'Passed', N'Chất lượng đạt yêu cầu'),
-(15, 1, '2026-01-19 08:00:00', 'C', 'Failed', N'Hàng bị dập hoặc hư hỏng'),
-(16, 2, '2026-01-20 08:00:00', 'A', 'Passed', N'Chất lượng đạt yêu cầu');
-
-INSERT INTO LossReports (BatchId, ReportedBy, LossType, Quantity, Reason, Status, ReportedDate)
-VALUES
-(1, 4, 'Spoilage', 3, N'Ghi nhận hao hụt trong quá trình bảo quản', 'Approved', '2026-01-14 08:00:00'),
-(2, 1, 'Loss', 4, N'Ghi nhận hao hụt trong quá trình bảo quản', 'Approved', '2026-01-15 08:00:00'),
-(3, 2, 'Damage', 5, N'Ghi nhận hao hụt trong quá trình bảo quản', 'Approved', '2026-01-16 08:00:00'),
-(4, 3, 'Spoilage', 6, N'Ghi nhận hao hụt trong quá trình bảo quản', 'Approved', '2026-01-17 08:00:00'),
-(5, 4, 'Loss', 2, N'Ghi nhận hao hụt trong quá trình bảo quản', 'Approved', '2026-01-18 08:00:00'),
-(6, 1, 'Damage', 3, N'Ghi nhận hao hụt trong quá trình bảo quản', 'Approved', '2026-01-19 08:00:00'),
-(7, 2, 'Spoilage', 4, N'Ghi nhận hao hụt trong quá trình bảo quản', 'Approved', '2026-01-20 08:00:00'),
-(8, 3, 'Loss', 5, N'Ghi nhận hao hụt trong quá trình bảo quản', 'Approved', '2026-01-21 08:00:00'),
-(9, 4, 'Damage', 6, N'Ghi nhận hao hụt trong quá trình bảo quản', 'Approved', '2026-01-22 08:00:00'),
-(10, 1, 'Spoilage', 2, N'Ghi nhận hao hụt trong quá trình bảo quản', 'Approved', '2026-01-23 08:00:00'),
-(11, 2, 'Loss', 3, N'Ghi nhận hao hụt trong quá trình bảo quản', 'Approved', '2026-01-24 08:00:00'),
-(12, 3, 'Damage', 4, N'Ghi nhận hao hụt trong quá trình bảo quản', 'Approved', '2026-01-25 08:00:00'),
-(13, 4, 'Spoilage', 5, N'Ghi nhận hao hụt trong quá trình bảo quản', 'Approved', '2026-01-26 08:00:00'),
-(14, 1, 'Loss', 6, N'Ghi nhận hao hụt trong quá trình bảo quản', 'Approved', '2026-01-27 08:00:00'),
-(15, 2, 'Damage', 2, N'Ghi nhận hao hụt trong quá trình bảo quản', 'Pending', '2026-01-28 08:00:00'),
-(16, 3, 'Spoilage', 3, N'Ghi nhận hao hụt trong quá trình bảo quản', 'Pending', '2026-01-29 08:00:00'),
-(17, 4, 'Loss', 4, N'Ghi nhận hao hụt trong quá trình bảo quản', 'Pending', '2026-01-30 08:00:00'),
-(18, 1, 'Damage', 5, N'Ghi nhận hao hụt trong quá trình bảo quản', 'Pending', '2026-01-31 08:00:00'),
-(19, 2, 'Spoilage', 6, N'Ghi nhận hao hụt trong quá trình bảo quản', 'Pending', '2026-02-01 08:00:00'),
-(20, 3, 'Loss', 2, N'Ghi nhận hao hụt trong quá trình bảo quản', 'Pending', '2026-02-02 08:00:00');
-
-INSERT INTO StockCounts (CountedBy, CountDate, Status, Notes)
-VALUES
-(3, '2026-01-16 08:00:00', 'Completed', N'Kiểm kê định kỳ kho'),
-(4, '2026-01-17 08:00:00', 'Completed', N'Kiểm kê định kỳ kho'),
-(1, '2026-01-18 08:00:00', 'Completed', N'Kiểm kê định kỳ kho'),
-(2, '2026-01-19 08:00:00', 'Completed', N'Kiểm kê định kỳ kho'),
-(3, '2026-01-20 08:00:00', 'Completed', N'Kiểm kê định kỳ kho'),
-(4, '2026-01-21 08:00:00', 'Completed', N'Kiểm kê định kỳ kho'),
-(1, '2026-01-22 08:00:00', 'Completed', N'Kiểm kê định kỳ kho'),
-(2, '2026-01-23 08:00:00', 'Completed', N'Kiểm kê định kỳ kho'),
-(3, '2026-01-24 08:00:00', 'Completed', N'Kiểm kê định kỳ kho'),
-(4, '2026-01-25 08:00:00', 'Completed', N'Kiểm kê định kỳ kho'),
-(1, '2026-01-26 08:00:00', 'Completed', N'Kiểm kê định kỳ kho'),
-(2, '2026-01-27 08:00:00', 'Completed', N'Kiểm kê định kỳ kho'),
-(3, '2026-01-28 08:00:00', 'Completed', N'Kiểm kê định kỳ kho'),
-(4, '2026-01-29 08:00:00', 'Completed', N'Kiểm kê định kỳ kho'),
-(1, '2026-01-30 08:00:00', 'Completed', N'Kiểm kê định kỳ kho'),
-(2, '2026-01-31 08:00:00', 'Completed', N'Kiểm kê định kỳ kho'),
-(3, '2026-02-01 08:00:00', 'Completed', N'Kiểm kê định kỳ kho'),
-(4, '2026-02-02 08:00:00', 'Pending', N'Kiểm kê định kỳ kho'),
-(1, '2026-02-03 08:00:00', 'Pending', N'Kiểm kê định kỳ kho'),
-(2, '2026-02-04 08:00:00', 'Pending', N'Kiểm kê định kỳ kho');
-
-INSERT INTO StockCountDetails (CountId, BatchId, SystemQty, CountedQty, Difference)
-VALUES
-(1, 1, 251, 250, -1),
-(2, 2, 252, 250, -2),
-(3, 3, 253, 250, -3),
-(4, 4, 254, 254, 0),
-(5, 5, 255, 254, -1),
-(6, 6, 256, 254, -2),
-(7, 7, 257, 254, -3),
-(8, 8, 258, 258, 0),
-(9, 9, 259, 258, -1),
-(10, 10, 260, 258, -2),
-(11, 11, 261, 258, -3),
-(12, 12, 262, 262, 0),
-(13, 13, 263, 262, -1),
-(14, 14, 264, 262, -2),
-(15, 15, 265, 262, -3),
-(16, 16, 266, 266, 0),
-(17, 17, 267, 266, -1),
-(18, 18, 268, 266, -2),
-(19, 19, 269, 266, -3),
-(20, 20, 270, 270, 0);
-
-INSERT INTO StockAdjustments (CountId, RequestedBy, ApprovedBy, RequestDate, Reason, Status, ApprovedDate)
-VALUES
-(1, 3, 2, '2026-01-17 08:00:00', N'Điều chỉnh theo kết quả kiểm kê thực tế', 'Approved', '2026-01-17 09:00:00'),
-(2, 4, 2, '2026-01-18 08:00:00', N'Điều chỉnh theo kết quả kiểm kê thực tế', 'Approved', '2026-01-18 09:00:00'),
-(3, 3, 2, '2026-01-19 08:00:00', N'Điều chỉnh theo kết quả kiểm kê thực tế', 'Approved', '2026-01-19 09:00:00'),
-(4, 4, 2, '2026-01-20 08:00:00', N'Điều chỉnh theo kết quả kiểm kê thực tế', 'Approved', '2026-01-20 09:00:00'),
-(5, 3, 2, '2026-01-21 08:00:00', N'Điều chỉnh theo kết quả kiểm kê thực tế', 'Approved', '2026-01-21 09:00:00'),
-(6, 4, 2, '2026-01-22 08:00:00', N'Điều chỉnh theo kết quả kiểm kê thực tế', 'Approved', '2026-01-22 09:00:00'),
-(7, 3, 2, '2026-01-23 08:00:00', N'Điều chỉnh theo kết quả kiểm kê thực tế', 'Approved', '2026-01-23 09:00:00'),
-(8, 4, 2, '2026-01-24 08:00:00', N'Điều chỉnh theo kết quả kiểm kê thực tế', 'Approved', '2026-01-24 09:00:00'),
-(9, 3, 2, '2026-01-25 08:00:00', N'Điều chỉnh theo kết quả kiểm kê thực tế', 'Approved', '2026-01-25 09:00:00'),
-(10, 4, 2, '2026-01-26 08:00:00', N'Điều chỉnh theo kết quả kiểm kê thực tế', 'Approved', '2026-01-26 09:00:00'),
-(11, 3, 2, '2026-01-27 08:00:00', N'Điều chỉnh theo kết quả kiểm kê thực tế', 'Approved', '2026-01-27 09:00:00'),
-(12, 4, 2, '2026-01-28 08:00:00', N'Điều chỉnh theo kết quả kiểm kê thực tế', 'Approved', '2026-01-28 09:00:00'),
-(13, 3, 2, '2026-01-29 08:00:00', N'Điều chỉnh theo kết quả kiểm kê thực tế', 'Approved', '2026-01-29 09:00:00'),
-(14, 4, 2, '2026-01-30 08:00:00', N'Điều chỉnh theo kết quả kiểm kê thực tế', 'Approved', '2026-01-30 09:00:00'),
-(15, 3, NULL, '2026-01-31 08:00:00', N'Điều chỉnh theo kết quả kiểm kê thực tế', 'Pending', NULL),
-(16, 4, NULL, '2026-02-01 08:00:00', N'Điều chỉnh theo kết quả kiểm kê thực tế', 'Pending', NULL),
-(17, 3, NULL, '2026-02-02 08:00:00', N'Điều chỉnh theo kết quả kiểm kê thực tế', 'Pending', NULL),
-(18, 4, NULL, '2026-02-03 08:00:00', N'Điều chỉnh theo kết quả kiểm kê thực tế', 'Pending', NULL),
-(19, 3, NULL, '2026-02-04 08:00:00', N'Điều chỉnh theo kết quả kiểm kê thực tế', 'Pending', NULL),
-(20, 4, NULL, '2026-02-05 08:00:00', N'Điều chỉnh theo kết quả kiểm kê thực tế', 'Pending', NULL);
-
-INSERT INTO StockAdjustmentDetails (AdjustmentId, BatchId, SystemQty, ActualQty, QuantityChange)
-VALUES
-(1, 1, 251, 250, -1),
-(2, 2, 252, 250, -2),
-(3, 3, 253, 250, -3),
-(4, 4, 254, 254, 0),
-(5, 5, 255, 254, -1),
-(6, 6, 256, 254, -2),
-(7, 7, 257, 254, -3),
-(8, 8, 258, 258, 0),
-(9, 9, 259, 258, -1),
-(10, 10, 260, 258, -2),
-(11, 11, 261, 258, -3),
-(12, 12, 262, 262, 0),
-(13, 13, 263, 262, -1),
-(14, 14, 264, 262, -2),
-(15, 15, 265, 262, -3),
-(16, 16, 266, 266, 0),
-(17, 17, 267, 266, -1),
-(18, 18, 268, 266, -2),
-(19, 19, 269, 266, -3),
-(20, 20, 270, 270, 0);
+(5, 5, 'BATCH005', '2026-01-08 08:00:00', '2026-01-18 08:00:00', 350, 300, 10, 290, 12000, 'A', 'Available');
