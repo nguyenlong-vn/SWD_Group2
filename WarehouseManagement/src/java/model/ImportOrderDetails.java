@@ -7,6 +7,7 @@ public class ImportOrderDetails {
     private double quantity;
     private String unit;
     private double unitPrice;
+    private String productName;
 
     public ImportOrderDetails() {
     }
@@ -18,6 +19,14 @@ public class ImportOrderDetails {
         this.quantity = quantity;
         this.unit = unit;
         this.unitPrice = unitPrice;
+    }
+
+    public String getProductName() {
+        return productName;
+    }
+
+    public void setProductName(String productName) {
+        this.productName = productName;
     }
 
     public int getImportDetailId() {

@@ -3,17 +3,17 @@ package model;
 public class SupplierReturnDetails {
     private int returnDetailId;
     private int returnId;
-    private int batchId;
+    private int provisionalDetailId;
     private double quantity;
     private String reason;
 
     public SupplierReturnDetails() {
     }
 
-    public SupplierReturnDetails(int returnDetailId, int returnId, int batchId, double quantity, String reason) {
+    public SupplierReturnDetails(int returnDetailId, int returnId, int provisionalDetailId, double quantity, String reason) {
         this.returnDetailId = returnDetailId;
         this.returnId = returnId;
-        this.batchId = batchId;
+        this.provisionalDetailId = provisionalDetailId;
         this.quantity = quantity;
         this.reason = reason;
     }
@@ -34,12 +34,12 @@ public class SupplierReturnDetails {
         this.returnId = returnId;
     }
 
-    public int getBatchId() {
-        return batchId;
+    public int getProvisionalDetailId() {
+        return provisionalDetailId;
     }
 
-    public void setBatchId(int batchId) {
-        this.batchId = batchId;
+    public void setProvisionalDetailId(int provisionalDetailId) {
+        this.provisionalDetailId = provisionalDetailId;
     }
 
     public double getQuantity() {

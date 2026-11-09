@@ -5,6 +5,7 @@ import java.sql.Timestamp;
 public class LossReports {
     private int lossReportId;
     private int batchId;
+    private int provisionalDetailId;
     private int reportedBy;
     private String lossType;
     private double quantity;
@@ -40,6 +41,14 @@ public class LossReports {
 
     public void setBatchId(int batchId) {
         this.batchId = batchId;
+    }
+
+    public int getProvisionalDetailId() {
+        return provisionalDetailId;
+    }
+
+    public void setProvisionalDetailId(int provisionalDetailId) {
+        this.provisionalDetailId = provisionalDetailId;
     }
 
     public int getReportedBy() {

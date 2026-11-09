@@ -9,18 +9,20 @@ public class ProvisionalReceipts {
     private Timestamp receivedDate;
     private int receivedBy;
     private String status;
+    private String qcStatus;
     private String notes;
 
     public ProvisionalReceipts() {
     }
 
-    public ProvisionalReceipts(int provisionalReceiptId, int importOrderId, String receiptNumber, Timestamp receivedDate, int receivedBy, String status, String notes) {
+    public ProvisionalReceipts(int provisionalReceiptId, int importOrderId, String receiptNumber, Timestamp receivedDate, int receivedBy, String status, String qcStatus, String notes) {
         this.provisionalReceiptId = provisionalReceiptId;
         this.importOrderId = importOrderId;
         this.receiptNumber = receiptNumber;
         this.receivedDate = receivedDate;
         this.receivedBy = receivedBy;
         this.status = status;
+        this.qcStatus = qcStatus;
         this.notes = notes;
     }
 
@@ -70,6 +72,14 @@ public class ProvisionalReceipts {
 
     public void setStatus(String status) {
         this.status = status;
+    }
+
+    public String getQcStatus() {
+        return qcStatus;
+    }
+
+    public void setQcStatus(String qcStatus) {
+        this.qcStatus = qcStatus;
     }
 
     public String getNotes() {

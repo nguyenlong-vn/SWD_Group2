@@ -1,0 +1,8 @@
+{
+    "chat.tools.terminal.autoApprove": {
+        "/^javac -encoding UTF-8 -proc:none -cp \"build\\\\web\\\\WEB-INF\\\\classes;build\\\\web\\\\WEB-INF\\\\lib\\\\\\*;C:\\\\Program Files\\\\Apache Software Foundation\\\\Tomcat 10\\.1\\\\lib\\\\\\*\" -d \"\\$env:TEMP\" src\\\\java\\\\model\\\\ProvisionalReceiptDetails\\.java src\\\\java\\\\model\\\\PurchaseReceiptRow\\.java src\\\\java\\\\model\\\\GoodsReceiptEntry\\.java src\\\\java\\\\model\\\\OrderDiscrepancyRow\\.java src\\\\java\\\\dao\\\\ProvisionalReceiptsDAO\\.java src\\\\java\\\\dao\\\\ProvisionalReceiptDetailsDAO\\.java src\\\\java\\\\dao\\\\GoodsReceiptsDAO\\.java src\\\\java\\\\dao\\\\StorageLocationsDAO\\.java src\\\\java\\\\dao\\\\ImportOrderDetailsDAO\\.java src\\\\java\\\\dao\\\\LossReportsDAO\\.java src\\\\java\\\\service\\\\PurchaseWorkflowService\\.java src\\\\java\\\\controller\\\\PurchaseController\\.java$/": {
+            "approve": true,
+            "matchCommandLine": true
+        }
+    }
+}

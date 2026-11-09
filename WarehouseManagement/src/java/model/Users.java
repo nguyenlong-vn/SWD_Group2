@@ -8,6 +8,7 @@ public class Users {
     private String fullName;
     private String email;
     private boolean isActive;
+    private String roleName;
 
     public Users() {
     }
@@ -20,6 +21,14 @@ public class Users {
         this.fullName = fullName;
         this.email = email;
         this.isActive = isActive;
+    }
+
+    public String getRoleName() {
+        return roleName;
+    }
+
+    public void setRoleName(String roleName) {
+        this.roleName = roleName;
     }
 
     public int getUserId() {

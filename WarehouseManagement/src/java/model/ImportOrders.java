@@ -1,6 +1,7 @@
 package model;
 
 import java.sql.Timestamp;
+import java.util.List;
 
 public class ImportOrders {
     private int importOrderId;
@@ -10,6 +11,7 @@ public class ImportOrders {
     private Timestamp orderDate;
     private Timestamp expectedDate;
     private String status;
+    private List<ImportOrderDetails> details;
 
     public ImportOrders() {
     }
@@ -78,5 +80,13 @@ public class ImportOrders {
 
     public void setStatus(String status) {
         this.status = status;
+    }
+
+    public List<ImportOrderDetails> getDetails() {
+        return details;
+    }
+
+    public void setDetails(List<ImportOrderDetails> details) {
+        this.details = details;
     }
 }
